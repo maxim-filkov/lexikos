@@ -1,0 +1,82 @@
+<html> 
+<head> 
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.js"></script> 
+ 	<script>
+		(function ($) {
+			$.fn.toObject = function () {
+				var o = {};
+				var a = this.serializeArray();
+				$.each(a, function () {
+					if (o[this.name]) {
+						if (!o[this.name].push) {
+							o[this.name] = [o[this.name]];
+						}
+						o[this.name].push(this.value || '');
+					} else {
+						o[this.name] = this.value || '';
+					}
+				});
+				return o;
+			};
+		})(jQuery);
+
+
+		function submitImage(entry) {
+			if($('input[type="file"]')[0].files[0] == undefined) {
+				return
+			}
+
+			$('[name="entryId"]').val(entry.id);
+
+			iframe = $('iframe#imageIframe')
+
+			var eventHandler = function () {
+				var response = iframe.contents().find("body").html().toString();
+				response = response.startsWith("<pre") ? iframe.contents().find("pre").html() : response;
+				entry = JSON.parse(response);
+				iframe.unbind("load");
+				iframe.remove();
+			}
+
+			iframe.bind('load', eventHandler);
+			$("#imageForm").submit();
+		}
+
+		function sendForm() {
+			$.ajax({
+				type: "POST",
+				url: "/search/v1/translations/enru/",
+				data: JSON.stringify($("#dataForm").toObject()),
+				dataType: "json",
+				contentType: "application/json",
+				success: function(data) {
+					submitImage(data);
+				}
+			});
+		}
+	</script>
+    <style rel="stylesheet" type="text/css">
+		body {
+		 font-family: Arial, Helvetica, sans-serif;
+		 font-size: 12px;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="entryForm">
+		<form id="dataForm">
+			<p>Source phrase: <input type="text" name="sourcePhrase"></p>
+			<p>Target phrase: <input type="text" name="targetPhrase"></p>
+			<p><textarea rows="8" cols="35" name="commentary"></textarea></p>
+		</form>
+		<form id="imageForm" method="post" enctype="multipart/form-data" action="/search/v1/translations/enru/file"
+			  target="imageIframe">
+			<input type="hidden" name="entryId">
+			<p><input type="file" name="imageFile"></p>
+		</form>
+		<p><input type="button" value="Submit" onclick="sendForm();return false;" /></p>
+		<iframe id="imageIframe" name="imageIframe" border="0" style="width:0;height:0;border:none"></iframe>
+	</div>
+</body>
+</html>
